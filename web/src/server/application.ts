@@ -186,7 +186,10 @@ export class Application {
     if (operation === "inspect") {
       const { seller_id } = await body(request, inspectSchema);
       this.assertOpen(await this.session(id));
-      const live = await inspectLive(this.config, seller_id, id, this.fetcher);
+      const inspectFetcher = this.fetcher === fetch
+        ? ((input: RequestInfo | URL, init?: RequestInit) => this.handle(new Request(input, init)))
+        : this.fetcher;
+      const live = await inspectLive(this.config, seller_id, id, inspectFetcher);
       await this.update(id, (session) => {
         this.assertOpen(session);
         appendEvent(session, this.now(), { type: "offer_inspected", seller_id,
