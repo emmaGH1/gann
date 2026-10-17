@@ -42,10 +42,11 @@ export function payAIFacilitator(fetcher: typeof fetch = fetch): Facilitator {
       asset: payload.accepted.asset.toLowerCase(), payTo: payload.accepted.payTo.toLowerCase(),
     } };
     const response = await fetcher(`https://facilitator.payai.network/${operation}`, {
-      method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(timeoutMs),
+      method: "POST", redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(timeoutMs),
       headers,
       body: stableJson({ x402Version: 2, paymentPayload: stablePayload, paymentRequirements: stableRequirements }),
     });
+    if (response.status >= 300 && response.status < 400) throw new Error("facilitator_redirect_rejected");
     // PayAI OpenAPI specifies structured JSON even on non-2xx settlement
     // responses; settlement_pending may carry a broadcast transaction hash.
     const text = await boundedText(response.body, 16 * 1024, 3_000);

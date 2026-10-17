@@ -192,21 +192,35 @@ export class RedisStore implements SessionStore {
     return `gann:v1:session:${id}`;
   }
   private async command(args: (string | number)[]): Promise<unknown> {
+    let stage = "request";
     try {
-      const response = await this.fetcher(this.config.url, {
+      const response = await this.fetcher.call(globalThis, this.config.url, {
         method: "POST",
-        redirect: "error",
+        // Workers supports manual/follow only; non-2xx below fails closed.
+        redirect: "manual",
         cache: "no-store",
         signal: AbortSignal.timeout(1800),
         headers: { Authorization: `Bearer ${this.config.token}`, "Content-Type": "application/json" },
         body: JSON.stringify(args),
       });
-      if (!response.ok) unavailable();
+      if (!response.ok) {
+        console.warn("gann_storage_failure", { stage: "http", status: response.status });
+        unavailable();
+      }
+      stage = "body";
       const text = await boundedText(response.body, 256 * 1024, 1800);
+      stage = "json";
       const result = JSON.parse(text) as { result?: unknown; error?: unknown };
+      stage = "envelope";
       if (result.error || !("result" in result)) unavailable();
       return result.result;
-    } catch { unavailable(); }
+    } catch (error) {
+      // Only fixed categories: never log URL, token, command, response or error message.
+      const kind = error instanceof Error && ["TypeError", "AbortError", "TimeoutError", "SyntaxError"].includes(error.name)
+        ? error.name : "unavailable";
+      console.warn("gann_storage_failure", { stage, kind });
+      unavailable();
+    }
   }
   private paymentKey(namespace: "authorization" | "order", id: string) {
     if (!/^[a-f0-9]{64}$/.test(id)) throw new ApiError(400, "invalid_payment_key");

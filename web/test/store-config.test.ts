@@ -19,6 +19,26 @@ const fixture = (): Session => ({
   agentLabel: "Test fixture", events: [], attempts: {}, deliveries: [],
 });
 
+test("Redis fetch preserves the Workers global receiver", async () => {
+  const receiverCheckedFetch = (async function (this: unknown) {
+    assert.equal(this, globalThis);
+    return Response.json({ result: null });
+  }) as typeof fetch;
+  const store = new RedisStore({ url: "https://store.upstash.io", token: "TEST_ONLY_TOKEN" }, receiverCheckedFetch);
+  assert.equal(await store.get("00000000-0000-4000-8000-000000000000"), null);
+});
+
+test("Redis manual redirects fail closed without following Location", async () => {
+  let calls = 0;
+  const store = new RedisStore({ url: "https://store.upstash.io", token: "TEST_ONLY_TOKEN" }, (async (_url, init) => {
+    calls++;
+    assert.equal(init?.redirect, "manual");
+    return new Response(null, { status: 302, headers: { Location: "https://other.example" } });
+  }) as typeof fetch);
+  await assert.rejects(store.get("00000000-0000-4000-8000-000000000000"), /service_unavailable/);
+  assert.equal(calls, 1);
+});
+
 test("production cannot use an absent persistence service or a memory store", () => {
   assert.throws(() => readConfig({ ...env, NODE_ENV: "production" }), /persistence_required/);
   assert.throws(() => new MemoryStore("production"), /persistence_required/);
@@ -74,7 +94,7 @@ test("Redis REST adapter sends atomic Lua CAS, absolute expiry and bounded authe
   const transport = (async (input, init) => {
     assert.equal(input, "https://store.upstash.io");
     assert.equal(init!.method, "POST");
-    assert.equal(init!.redirect, "error");
+    assert.equal(init!.redirect, "manual");
     assert.equal(init!.cache, "no-store");
     assert.ok(init!.signal);
     assert.equal(new Headers(init!.headers).get("authorization"), "Bearer TEST_ONLY_TOKEN");

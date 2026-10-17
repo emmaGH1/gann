@@ -23,6 +23,9 @@ Cloudflare Workers Free is the preferred free-hosting candidate: its published W
 
 The OpenNext cache overrides remain dummy and no KV/R2/Queue is configured because the app has no reviewed cache-revalidation need; durable sessions/payments still require working hosted Redis. The public deployment was explicitly authorized for unpaid validation. Its API remains fail-closed until configuration validates. Free-tier CPU headroom, external Redis latency/durability, seller request wall-clock/PayBox timeout, and facilitator availability must be checked before any hosted unpaid test. The local compatibility date is 2026-10-13, the newest date supported by the pinned local `workerd` binary. Any broader publication still needs human approval.
 
+## Hosted health fix
+The previous 503 was traced to Workers rejecting `redirect: "error"` before sending the Redis request. Server fetches now use `manual` with explicit fail-closed redirect handling. After redeploy, `/api/health` returns 200 with `storage: redis`, `payments: disabled`. This supersedes the historical failure above and proves a Redis GET probe only. No secret values were inspected. Hosted session writes/Lua, installed PayBox and live facilitator/payment behavior remain untested.
+
 ## Fallback
 CDP production facilitator https://api.cdp.coinbase.com/platform/v2/x402 requires approved credentials. No keys provisioned. Reconcile original uncertain payments before changing facilitators.
 
@@ -32,7 +35,7 @@ CDP production facilitator https://api.cdp.coinbase.com/platform/v2/x402 require
 - [ ] Independent review of the fixes for byte-identical idempotency bodies and admission/finalization race.
 - [ ] Installed-plugin unpaid validation accepts intended challenge.
 - [x] User selected Cloudflare Workers Free and authorized one public unpaid-validation deployment; the Worker exists at the URL above.
-- [ ] Resolve Upstash connectivity (`/api/health` 503 `service_unavailable` during Redis probe); verify `/api/health` reports `storage: redis` and `payments: disabled` before PayBox requests.
+- [x] Hosted health returns 200 with `storage: redis` and `payments: disabled` after fixing the Workers fetch redirect option.
 - [ ] Hosted Redis Lua/CAS/concurrency/failover/TTL behavior and payment timeout/latency verified.
 - [ ] Facilitator capacity, PayAI idempotency/body matching and actual v2 verification/receipt behavior tested in the hosted environment.
 - [ ] Human-approved $0.01 Signal-only installed-plugin purchase settles, survives replay and delivers code. No real payment yet.

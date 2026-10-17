@@ -490,7 +490,7 @@ test("manual PayAI transport has a fixed host, bounded request/body, correct v2 
   const calls: string[] = [];
   const transport = (async (url, init) => {
     calls.push(String(url));
-    assert.equal(init!.redirect, "error"); assert.equal(init!.cache, "no-store"); assert.ok(init!.signal);
+    assert.equal(init!.redirect, "manual"); assert.equal(init!.cache, "no-store"); assert.ok(init!.signal);
     const body = JSON.parse(String(init!.body));
     assert.equal(body.x402Version, 2);
     assert.equal(body.paymentRequirements.payTo, config.payTo);

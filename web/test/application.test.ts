@@ -31,7 +31,7 @@ function setup(options: { fetcher?: typeof fetch; enablePayments?: boolean } = {
     const url = String(input);
     fetched.push({ url, init });
     assert.equal(new URL(url).origin, config.origin);
-    assert.equal(init?.redirect, "error");
+    assert.equal(init?.redirect, "manual");
     assert.equal(new Headers(init?.headers).has("x-gann-key"), false);
     return app.handle(new Request(url, init));
   }) as typeof fetch;

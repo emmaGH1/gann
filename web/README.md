@@ -1,6 +1,6 @@
 # gann web — durable, default-disabled payment slice
 
-Real Next.js App Router / TypeScript application implementing the frozen [API contract](../docs/API_CONTRACT.md). UI pages remain untouched placeholders pending the separate design review. One public Cloudflare Workers Free deployment is authorized for unpaid validation; its home page responds, but the API currently returns `503 service_unavailable` during the hosted Redis health probe. **No successful hosted validation, hosted Redis, real facilitator call, cryptographic payment verification, settlement, or payment has been performed.** The Redis Lua was smoke-tested against a temporary local Redis 7 process with fixtures only.
+Real Next.js App Router / TypeScript application implementing the frozen [API contract](../docs/API_CONTRACT.md). UI pages remain untouched placeholders pending the separate design review. One public Cloudflare Workers Free deployment is authorized for unpaid validation; its home page responds and `/api/health` now returns 200 with `storage: redis`, `payments: disabled`. The earlier 503 was caused by Workers rejecting `redirect: "error"`; server requests now use manual, fail-closed redirect handling. **Only the hosted Redis GET health probe has passed; no hosted session/write/Lua validation, real facilitator call, cryptographic payment verification, settlement, or payment has been performed.** The Redis Lua was smoke-tested against a temporary local Redis 7 process with fixtures only.
 
 ## Implemented routes and boundaries
 

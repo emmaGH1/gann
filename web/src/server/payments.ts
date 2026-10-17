@@ -55,7 +55,7 @@ export async function inspectLive(config: Config, seller: SellerId, session: str
   const url = resourceUrl(config, seller, session);
   try {
     const response = await fetcher(url, {
-      method: "GET", redirect: "error", cache: "no-store",
+      method: "GET", redirect: "manual", cache: "no-store",
       signal: AbortSignal.timeout(1500), headers: { Accept: "application/json" },
     });
     const header = response.headers.get("payment-required");
