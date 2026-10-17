@@ -91,7 +91,12 @@ test("all mutations require broker auth, including before input validation", asy
       assert.deepEqual(await response.json(), { error: "unauthorized" });
     }
   }
-  assert.equal((await s.store.get(id))!.events.length, 1);
+  // Accepts either X-Gann-Key or Authorization header
+  const authResponse = await s.request(`/api/session/${id}/inspect`, "POST", { seller_id: "signal" }, {
+    authorization: `Bearer ${FIXTURE_KEY}`,
+  });
+  assert.equal(authResponse.status, 200);
+  assert.equal((await s.store.get(id))!.events.length, 2);
 });
 
 test("strict mutation schemas reject unknown fields and caller URLs", async () => {

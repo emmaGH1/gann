@@ -14,7 +14,8 @@ export function json(data: unknown, status = 200, headers: Record<string, string
 }
 
 export function authenticate(request: Request, key: string) {
-  const given = request.headers.get("x-gann-key") ?? "";
+  const rawAuth = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const given = request.headers.get("x-gann-key") ?? rawAuth ?? "";
   // Hashing normalizes lengths before timingSafeEqual; no secret is echoed.
   const hash = (value: string) => createHash("sha256").update(value).digest();
   if (!given || given.length > 256 || !timingSafeEqual(hash(given), hash(key))) {
