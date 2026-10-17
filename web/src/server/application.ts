@@ -5,7 +5,8 @@ import { BUDGET, MISSION, SELLERS, SELLER_IDS, SESSION_TTL_MS, sellerList, type 
 import { ApiError } from "./errors";
 import { authenticate, body, json, parse, uuid } from "./http";
 import { appendEvent, type Session } from "./model";
-import { inspectLive, PAID_PATH_READY, resourceUrl, unpaidChallenge } from "./payments";
+import { durableDelivery, inspectLive, orderKey, paidSignal, PAID_PATH_READY, resourceUrl, unpaidChallenge } from "./payments";
+import { payAIFacilitator, type Facilitator } from "./facilitator";
 import { codeHash, confirmedDeliveries, score } from "./scoring";
 import type { SessionStore } from "./store";
 
@@ -22,6 +23,7 @@ export class Application {
     private readonly store: SessionStore,
     private readonly fetcher: typeof fetch = fetch,
     private readonly now: () => number = Date.now,
+    private readonly facilitator?: Facilitator,
   ) {
     if (config.mode === "production" && store.kind !== "redis") throw new ApiError(503, "persistence_required");
   }
@@ -50,8 +52,29 @@ export class Application {
     if (session.finish?.result.completed) throw new ApiError(409, "session_completed");
   }
 
-  private snapshot(session: Session) {
+  private async paymentEvidence(session: Session) {
+    const attempts = Object.values(session.attempts).filter((attempt) => attempt.seller_id === "signal");
+    const resources = attempts.map((attempt) => resourceUrl(this.config, "signal", session.id, attempt.attempt_id));
+    const records = await this.store.getOrderPayments(resources.map(orderKey));
+    return {
+      deliveries: records.flatMap((record, i) => {
+        const delivery = durableDelivery(record, session, attempts[i].attempt_id, resources[i]);
+        return delivery ? [delivery] : [];
+      }),
+      confirmedRecords: records.filter((record) => record?.state === "confirmed"),
+      pending: records.filter((record) => record?.settlementEligible && record.state !== "confirmed").map((record) => record!.attempt),
+    };
+  }
+
+  private async snapshot(session: Session) {
+    // The ledger is authoritative. Stored session metadata/client assertions alone
+    // can NEVER create a delivery or complete a mission.
+    const evidence = await this.paymentEvidence(session);
+    session.deliveries = evidence.deliveries;
     const deliveries = confirmedDeliveries(session);
+    if (session.finish?.result.completed && !deliveries.some((delivery) => codeHash(delivery.code) === session.finish!.codeHash)) {
+      throw new ApiError(503, "delivery_evidence_unavailable");
+    }
     return {
       contractVersion: 1,
       session_id: session.id,
@@ -61,7 +84,7 @@ export class Application {
       mission: MISSION,
       budget_atomic: BUDGET,
       storage: this.store.kind,
-      payments: "disabled",
+      payments: this.config.enablePayments ? "configured" : "disabled",
       sellers: sellerList().map((seller) => ({ ...seller, required_amount: SELLERS[seller.seller_id].required })),
       // Allowlist event fields. Never spread private stored data into viewer output.
       events: session.events.map((event) => ({
@@ -76,7 +99,7 @@ export class Application {
         attempt_id: attempt.attempt_id, seller_id: attempt.seller_id,
         advertised_amount: attempt.advertised_amount,
         proposal_status: "not_observed", paybox_status: "not_observed", human_decision: "not_observed",
-        settlement_status: deliveries.some((delivery) => delivery.attempt_id === attempt.attempt_id) ? "confirmed" : "not_observed",
+        settlement_status: deliveries.some((delivery) => delivery.attempt_id === attempt.attempt_id) ? "confirmed" : evidence.pending.includes(attempt.attempt_id) ? "pending" : "not_observed",
         delivery_status: deliveries.some((delivery) => delivery.attempt_id === attempt.attempt_id) ? "confirmed" : "not_observed",
       })),
       settlements: deliveries.map((delivery) => ({ attempt_id: delivery.attempt_id, amount: delivery.amount, status: "confirmed" })),
@@ -94,16 +117,36 @@ export class Application {
       query[key] = value;
     }
     const { session: id, attempt } = parse(querySchema, query);
-    const session = await this.session(id);
-    if (attempt && session.attempts[attempt]?.seller_id !== seller) throw new ApiError(409, "attempt_not_recorded_for_seller");
-    const signature = request.headers.get("payment-signature") ?? request.headers.get("x-payment");
+    const v2 = request.headers.get("payment-signature");
+    const v1 = request.headers.get("x-payment");
+    if ((v2?.length ?? 0) + (v1?.length ?? 0) > 16 * 1024) throw new ApiError(431, "payment_header_too_large");
+    if (v2 !== null && v1 !== null) throw new ApiError(400, "ambiguous_payment_headers");
+    const signature = v2 ?? v1;
     if (signature !== null) {
-      if (signature.length > 16 * 1024) throw new ApiError(431, "payment_header_too_large");
       if (!attempt) throw new ApiError(400, "recorded_attempt_required");
       if (seller !== "signal") throw new ApiError(403, "seller_payment_disabled");
-      // Do not parse, persist, echo, verify, or transmit a signed authorization.
-      throw new ApiError(503, "paid_fulfillment_not_implemented");
+      if (!this.config.enablePayments) throw new ApiError(503, "payments_disabled");
+      if (v1 !== null) throw new ApiError(400, "unsupported_payment_version");
+      let session: Session;
+      try { session = await this.session(id); }
+      catch (error) {
+        if (!(error instanceof ApiError) || ![404, 410].includes(error.status)) throw error;
+        // Payment evidence outlives sessions. Permit ONLY digest-bound recovery of
+        // an existing durable order after session expiry/TTL eviction, never a new
+        // authorization, claim, verify or settle for an unavailable session.
+        return paidSignal(this.config, this.store, this.facilitator ?? payAIFacilitator(this.fetcher),
+          { id, expiresAt: this.now() }, attempt, signature, this.now, false);
+      }
+      if (session.attempts[attempt]?.seller_id !== seller) throw new ApiError(409, "attempt_not_recorded_for_seller");
+      return paidSignal(this.config, this.store, this.facilitator ?? payAIFacilitator(this.fetcher), session, attempt, signature, this.now);
     }
+    if (attempt && seller === "signal") {
+      const [existing] = await this.store.getOrderPayments([orderKey(resourceUrl(this.config, seller, id, attempt))]);
+      if (existing) return json({ status: existing.state === "confirmed" ? "confirmed" : "pending",
+        recovery: "Retry the original signed request for this order. Do not authorize another payment. Pending settlement requires operator reconciliation of the original authorization." }, 202);
+    }
+    const session = await this.session(id);
+    if (attempt && session.attempts[attempt]?.seller_id !== seller) throw new ApiError(409, "attempt_not_recorded_for_seller");
     return unpaidChallenge(this.config, seller, resourceUrl(this.config, seller, id, attempt));
   }
 
@@ -139,7 +182,7 @@ export class Application {
     }
     const id = parse(uuid, sessionRoute![1]);
     const operation = sessionRoute![2];
-    if (!operation) return json(this.snapshot(await this.session(id)));
+    if (!operation) return json(await this.snapshot(await this.session(id)));
     if (operation === "inspect") {
       const { seller_id } = await body(request, inspectSchema);
       this.assertOpen(await this.session(id));
@@ -167,11 +210,26 @@ export class Application {
       return json(value);
     }
     const { code } = await body(request, finishSchema);
+    const evidence = await this.paymentEvidence(await this.session(id));
+    const { deliveries } = evidence;
     const result = await this.update(id, (session) => {
+      let admissionRepaired = false;
+      const gate = session.paymentAdmission;
+      if (evidence.pending.length > 0) throw new ApiError(409, "payment_pending");
+      if (gate && gate.state !== "confirmed") {
+        const confirmed = evidence.confirmedRecords.find((record) => record!.order === gate.order &&
+          record!.id === gate.authorization && record!.digest === gate.digest);
+        if (!confirmed) throw new ApiError(409, "payment_pending");
+        session.paymentAdmission = { ...gate, owner: confirmed.owner, state: "confirmed", leaseUntil: confirmed.leaseUntil };
+        admissionRepaired = true;
+      }
       const hash = codeHash(code);
-      if (session.finish?.codeHash === hash) return { value: session.finish.result, changed: false };
-      this.assertOpen(session);
+      session.deliveries = deliveries;
       const value = score(session, code);
+      if (session.finish?.codeHash === hash && JSON.stringify(session.finish.result) === JSON.stringify(value)) {
+        return { value, changed: admissionRepaired };
+      }
+      this.assertOpen(session);
       session.finish = { codeHash: hash, result: value };
       appendEvent(session, this.now(), { type: "finish_checked", completed: value.completed });
       return { value, changed: true };

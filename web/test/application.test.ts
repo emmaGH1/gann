@@ -8,6 +8,7 @@ import type { Config } from "../src/server/config";
 import { BUDGET, CHAIN, SELLERS, SELLER_IDS, SESSION_TTL_MS, USDC } from "../src/server/course";
 import type { Session } from "../src/server/model";
 import { MemoryStore } from "../src/server/store";
+import { orderKey, resourceUrl } from "../src/server/payments";
 
 // All addresses, authorizations, and settlement records here are OFFLINE TEST FIXTURES.
 // None represents a real payment; this suite has no external network access.
@@ -53,13 +54,17 @@ function setup(options: { fetcher?: typeof fetch; enablePayments?: boolean } = {
 
 async function seedTestOnlyDelivery(store: MemoryStore, id: string, attempt: string, code: string) {
   const session = (await store.get(id))!;
-  const revision = session.revision;
-  session.deliveries.push({
-    attempt_id: attempt, seller_id: "signal", settlement: "confirmed", amount: "10000",
-    transaction: `0x${"ab".repeat(32)}`, code,
-  });
-  session.revision++;
-  assert.equal(await store.compareAndSwap(session, revision), true);
+  const resource = resourceUrl(config, "signal", id, attempt);
+  const record = {
+    id: "a".repeat(64), order: orderKey(resource), resource, session: id, attempt,
+    digest: "b".repeat(64), version: 2 as const, network: CHAIN, asset: USDC, payTo: FIXTURE_PAY_TO, amount: "10000" as const,
+    payer: FIXTURE_PAY_TO.toLowerCase(),
+    nonce: `0x${"cd".repeat(32)}`, validBefore: session.expiresAt, expiresAt: session.expiresAt + 86400000,
+    revision: 0, owner: "test-only", leaseUntil: session.expiresAt, settlementEligible: true, state: "processing" as const,
+  };
+  assert.equal(await store.claimPayment(record), true);
+  assert.equal(await store.confirmPayment({ ...record, revision: 1, state: "confirmed", code,
+    receipt: { success: true, network: CHAIN, transaction: `0x${"ab".repeat(32)}`, payer: FIXTURE_PAY_TO.toLowerCase() } }, 0), true);
 }
 
 test("start returns the frozen contract and no delivery/code", async () => {
@@ -264,7 +269,7 @@ test("seller orders require matching recorded attempts; URLs cannot be overridde
   assert.equal(s.fetched.length, 0);
 });
 
-test("signed trap requests never settle; signal also hard-fails even when env toggle enabled", async () => {
+test("signed trap requests never settle; malformed signal fails when env toggle enabled", async () => {
   const s = setup({ enablePayments: true });
   const id = await s.start();
   for (const seller of SELLER_IDS) {
@@ -272,12 +277,12 @@ test("signed trap requests never settle; signal also hard-fails even when env to
     await s.attempt(id, seller, attempt);
     const path = `/api/s/${seller}?session=${id}&attempt=${attempt}`;
     const response = await s.request(path, "GET", undefined, { "payment-signature": "TEST_ONLY_NOT_A_REAL_AUTHORIZATION" });
-    assert.equal(response.status, seller === "signal" ? 503 : 403);
+    assert.equal(response.status, seller === "signal" ? 400 : 403);
     assert.equal(response.headers.has("payment-response"), false);
   }
   assert.equal((await s.request(`/api/s/signal?session=${id}`, "GET", undefined, { "payment-signature": "TEST_ONLY" })).status, 400);
   const health = await (await s.request("/api/health")).json();
-  assert.equal(health.payments, "disabled");
+  assert.equal(health.payments, "configured");
   assert.equal(s.fetched.length, 0);
   const snapshot = await (await s.request(`/api/session/${id}`)).json();
   assert.equal(snapshot.settled_amount, "0");
@@ -356,7 +361,7 @@ test("wrong code cannot complete; correction only succeeds against a test-only c
   assert.equal(JSON.stringify(privateSession.events).includes("WRONG_PRIVATE_GUESS"), false);
 });
 
-test("pending, invalid or unbound test fixture records never count as settlement", async () => {
+test("session-only metadata (even plausible confirmed records), pending or unbound fixtures never count without durable ledger",  async () => {
   const s = setup();
   const id = await s.start();
   const attempt = randomUUID();
@@ -364,6 +369,7 @@ test("pending, invalid or unbound test fixture records never count as settlement
   const session = (await s.store.get(id))!;
   const common = { attempt_id: attempt, seller_id: "signal", settlement: "confirmed", amount: "10000", transaction: `0x${"ab".repeat(32)}`, code: "TEST_FIXTURE" };
   session.deliveries = [
+    { ...common },
     { ...common, settlement: "pending" },
     { ...common, transaction: "" },
     { ...common, attempt_id: randomUUID() },

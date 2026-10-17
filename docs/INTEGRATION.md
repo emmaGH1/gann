@@ -13,8 +13,8 @@ Updated 2026-10-17. Source: bounded read-only delegated research. No transaction
 - Plugin ends before approval/payment; agent polls PayBox request ID, never repeats buy to poll.
 - /verify does not move money. Require successful server-to-facilitator settlement, not agent assertions or HTTP 200 alone.
 - Middleware may execute handler before settlement and buffer output. Do not mark delivered or publish code in pre-settlement side effects. Require settlement-backed durable fulfillment record before finish can succeed.
-- Atomically bind payment authorization identity to canonical run/order. Identical retries recover same outcome; same authorization cannot unlock a different run. Fail closed on settlement uncertainty, preserve original attempt and reconcile rather than requesting fresh payment.
-- PayAI can report settlement_pending; seller function duration and PayBox paid-fetch timeout need testing. Ten-second plugin limit is separate from paid seller settlement.
+- Atomically bind payment authorization identity to canonical run/order, and CAS-admit at most one Signal payment per session. Finish is blocked while that payment is unresolved. Identical retries recover the same outcome; the same authorization cannot unlock a different run. Fail closed on settlement uncertainty; never ask for a replacement payment.
+- PayAI's current published OpenAPI describes an Idempotency-Key with a 24-hour window, identical-body settlement polling, and `settlement_pending` with a broadcast hash. The server uses deterministic request JSON, normalized address casing, one same-key/same-body immediate poll, and later retry of the same authorization after a lease/backoff. The actual PayAI matching/terminal behavior remains untested. Seller function duration (`maxDuration=60s`) and installed PayBox paid-fetch timeout need hosted tests; the plugin's 10-second tool limit is separate.
 
 ## Hosting decision needed
 Vercel Hobby restricted to non-commercial use. Published examples of commercial usage include requesting/processing visitor payments. Exact controlled self-payment hackathon case is not expressly exempt; do not assume permission or assert a definitive case-specific legal conclusion. Ask user's plan; no paid upgrade without authorization. Use permitted host or obtain clarification before deployment. This affects hosting, not the approved product concept.
@@ -22,12 +22,15 @@ Vercel Hobby restricted to non-commercial use. Published examples of commercial 
 ## Fallback
 CDP production facilitator https://api.cdp.coinbase.com/platform/v2/x402 requires approved credentials. No keys provisioned. Reconcile original uncertain payments before changing facilitators.
 
-## Gate checklist
+## Current implementation / gates
+- [x] Offline replay, duplicate, uncertain settlement, exact-body idempotency serialization, session payment-admission/finalization CAS, and trap/default-disabled behavior exercised with fake facilitator fixtures.
+- [x] Payment Lua command shape tested against mock REST; a local Redis 7 smoke executed session/payment Lua with fixtures only.
+- [ ] Independent review of the fixes for byte-identical idempotency bodies and admission/finalization race.
 - [ ] Installed-plugin unpaid validation accepts intended challenge.
-- [ ] Hosting plan/use permitted and publication authorized.
-- [ ] Facilitator capacity verified from deployed server.
-- [ ] Replay/duplicate/uncertain settlement tested offline.
-- [ ] Human-approved $0.01 installed-plugin purchase settles and delivers code.
+- [ ] Hosting plan/use permitted and publication authorized; configure hosted Redis with durability/eviction/retention policy.
+- [ ] Hosted Redis Lua/CAS/concurrency/failover/TTL behavior and payment timeout/latency verified.
+- [ ] Facilitator capacity, PayAI idempotency/body matching and actual v2 verification/receipt behavior tested in the hosted environment.
+- [ ] Human-approved $0.01 Signal-only installed-plugin purchase settles, survives replay and delivers code. No real payment yet.
 
 ## Sources
 - https://developer.paybox.sh/requirements.md
@@ -43,4 +46,4 @@ CDP production facilitator https://api.cdp.coinbase.com/platform/v2/x402 require
 - https://vercel.com/docs/limits/fair-use-guidelines
 - https://docs.cdp.coinbase.com/x402/seller/facilitator
 
-All dependency pins/compatibility above are research candidates, not installed or integration-tested server dependencies yet.
+The server pins the candidate SDK dependencies and validates the unpaid challenge offline. The real installed-plugin, hosted Redis, PayAI live flow and payment behaviors remain unverified.

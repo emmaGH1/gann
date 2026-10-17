@@ -28,8 +28,8 @@ export interface FinishResult {
   disclaimer: string;
 }
 
-// Private server-side shape reserved for a future confirmed-settlement implementation.
-// No production code in this slice creates a fulfillment. Tests may seed labelled fixtures.
+// Private projection of a durable confirmed payment ledger record. Application
+// finish/viewer paths reload the ledger rather than trusting session metadata.
 export interface ConfirmedDelivery {
   attempt_id: string;
   seller_id: "signal";
@@ -37,6 +37,15 @@ export interface ConfirmedDelivery {
   amount: "10000";
   transaction: string;
   code: string;
+}
+
+export interface PaymentAdmission {
+  order: string;
+  authorization: string;
+  digest: string;
+  owner: string;
+  state: "processing" | "pending" | "confirmed";
+  leaseUntil: number;
 }
 
 export interface Session {
@@ -48,6 +57,9 @@ export interface Session {
   events: CourseEvent[];
   attempts: Record<string, Attempt>;
   deliveries: ConfirmedDelivery[];
+  // CAS-shared with finish: once one Signal payment is admitted, no second
+  // order may settle in this session. Pending admission blocks completion.
+  paymentAdmission?: PaymentAdmission;
   finish?: { codeHash: string; result: FinishResult };
 }
 

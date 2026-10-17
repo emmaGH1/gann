@@ -6,6 +6,7 @@ import { readConfig, type Config } from "../src/server/config";
 import { ApiError } from "../src/server/errors";
 import type { Session } from "../src/server/model";
 import { MemoryStore, RedisStore } from "../src/server/store";
+import type { PaymentRecord } from "../src/server/payment-model";
 
 const env = {
   NODE_ENV: "test",
@@ -114,6 +115,100 @@ test("Redis REST adapter sends atomic Lua CAS, absolute expiry and bounded authe
   assert.deepEqual(await store.get(initial.id), updated);
   assert.equal(commands.length, 7);
   assert.equal(commands.every((command) => !JSON.stringify(command).includes("TEST_ONLY_TOKEN")), true);
+});
+
+const paymentFixture = (): PaymentRecord => ({
+  id: "a".repeat(64), order: "b".repeat(64), digest: "c".repeat(64),
+  resource: "https://gann.test/api/s/signal?session=test&attempt=test", session: randomUUID(), attempt: randomUUID(),
+  version: 2, network: "eip155:8453", asset: `0x${"12".repeat(20)}`, payTo: `0x${"12".repeat(20)}`, amount: "10000",
+  payer: `0x${"34".repeat(20)}`, nonce: `0x${"56".repeat(32)}`,
+  validBefore: 61000, expiresAt: 2_678_401_000, revision: 0, owner: randomUUID(), leaseUntil: 11000,
+  settlementEligible: false, state: "processing",
+});
+
+test("memory payment claim is atomic across global authorization and order namespaces; only one owner confirms", async () => {
+  const store = new MemoryStore("test", () => 1000);
+  const p = paymentFixture();
+  const results = await Promise.all([store.claimPayment(p), store.claimPayment(p)]);
+  assert.deepEqual(results, [true, false]);
+  assert.equal(await store.claimPayment({ ...p, order: "d".repeat(64), session: randomUUID() }), false);
+  assert.equal(await store.claimPayment({ ...p, id: "e".repeat(64) }), false);
+  const replacement = { ...p, revision: 1, owner: randomUUID(), leaseUntil: 66000 };
+  assert.equal(await store.reclaimPayment(replacement, 0, 10000), false);
+  assert.equal(await store.reclaimPayment(replacement, 0, 11000), true);
+  const eligible = { ...replacement, revision: 2, settlementEligible: true };
+  assert.equal(await store.markSettlementEligible(eligible, 1), true);
+  const confirmed = { ...eligible, revision: 3, state: "confirmed" as const, code: "PRIVATE_OFFLINE_FIXTURE" };
+  assert.equal(await store.confirmPayment({ ...confirmed, owner: "not-the-owner" }, 2), false);
+  assert.equal(await store.confirmPayment(confirmed, 3), false);
+  assert.equal(await store.confirmPayment(confirmed, 2), true);
+  assert.equal(await store.confirmPayment({ ...confirmed, code: "changed" }, 2), false);
+  const copy = (await store.getPayment(p.id))!;
+  copy.code = "outside mutation";
+  assert.equal((await store.getPayment(p.id))!.code, "PRIVATE_OFFLINE_FIXTURE");
+  assert.equal((await store.getOrderPayments([p.order]))[0]!.code, "PRIVATE_OFFLINE_FIXTURE");
+});
+
+test("Redis payment commands atomically claim TWO same-slot keys, preserve payment TTL, CAS owner/order/digest and batch-read ledger", async () => {
+  // Command-shape only: no real Redis or Lua execution is claimed.
+  const p = paymentFixture();
+  const reclaimed = { ...p, revision: 1, owner: randomUUID(), leaseUntil: 66000 };
+  const eligible = { ...reclaimed, revision: 2, settlementEligible: true };
+  const confirmed = { ...eligible, revision: 3, state: "confirmed" as const, code: "PRIVATE_OFFLINE_FIXTURE" };
+  const commands: (string | number)[][] = [];
+  const transport = (async (_url, init) => {
+    const args = JSON.parse(String(init!.body)) as (string | number)[];
+    commands.push(args);
+    let result: unknown = 1;
+    if (args[0] === "GET") result = JSON.stringify(confirmed);
+    if (args[0] === "MGET") {
+      result = String(args[1]).includes(":order:") ? [p.id, null] : [JSON.stringify(confirmed)];
+    }
+    return Response.json({ result });
+  }) as typeof fetch;
+  const store = new RedisStore({ url: "https://store.upstash.io", token: "TEST_ONLY_TOKEN" }, transport);
+  assert.equal(await store.claimPayment(p), true);
+  const claim = commands[0];
+  assert.equal(claim[0], "EVAL"); assert.equal(claim[2], 2);
+  assert.equal(claim[3], `gann:v1:{payments}:authorization:${p.id}`);
+  assert.equal(claim[4], `gann:v1:{payments}:order:${p.order}`);
+  assert.equal(claim[7], p.id);
+  assert.equal(claim[6], p.expiresAt);
+  assert.ok(Number(claim[6]) > fixture().expiresAt);
+  assert.match(String(claim[1]), /redis.call\('EXISTS', KEYS\[1\]\).*redis.call\('EXISTS', KEYS\[2\]\)/);
+  assert.match(String(claim[1]), /redis.call\('SET', KEYS\[2\], ARGV\[3\], 'PX', ttl\)/);
+  assert.equal(await store.reclaimPayment(reclaimed, 0, 11000), true);
+  const reclaim = commands[1];
+  assert.equal(reclaim[0], "EVAL"); assert.equal(reclaim[2], 2);
+  assert.equal(reclaim[7], p.id); assert.equal(reclaim[8], 11000);
+  assert.match(String(reclaim[1]), /decoded.leaseUntil > now/);
+  assert.match(String(reclaim[1]), /decoded.digest ~= replacement.digest/);
+  assert.match(String(reclaim[1]), /redis.call\('SET', KEYS\[1\], ARGV\[2\], 'PX', ttl\)/);
+  assert.equal(await store.markSettlementEligible(eligible, 1), true);
+  const mark = commands[2];
+  assert.equal(mark[0], "EVAL"); assert.match(String(mark[1]), /decoded.settlementEligible ~= false/);
+  assert.equal(await store.confirmPayment(confirmed, 2), true);
+  const cas = commands[3];
+  assert.equal(cas[2], 1); assert.equal(cas[4], 2);
+  assert.match(String(cas[1]), /decoded.owner ~= replacement.owner/);
+  assert.match(String(cas[1]), /decoded.order ~= replacement.order/);
+  assert.match(String(cas[1]), /decoded.digest ~= replacement.digest/);
+  assert.match(String(cas[1]), /decoded.state ~= 'processing'/);
+  assert.match(String(cas[1]), /decoded.expiresAt/);
+  assert.equal((await store.getPayment(p.id))!.code, confirmed.code);
+  const records = await store.getOrderPayments([p.order, "f".repeat(64)]);
+  assert.deepEqual(records, [confirmed, null]);
+  assert.equal(commands[4][0], "GET");
+  assert.equal(commands[5][0], "MGET"); assert.equal(commands[6][0], "MGET");
+  assert.equal(JSON.stringify(commands).includes("signature"), false);
+});
+
+test("Redis payment corruption or orphaned indexes cannot silently permit a fresh payment", async () => {
+  for (const result of [["bad-key"], [null, null], ["a".repeat(64)]]) {
+    const transport = (async () => Response.json({ result })) as typeof fetch;
+    const store = new RedisStore({ url: "https://store.upstash.io", token: "TEST_ONLY_TOKEN" }, transport);
+    await assert.rejects(store.getOrderPayments(["b".repeat(64)]));
+  }
 });
 
 test("Redis failure/corruption fails closed and does not expose tokens or upstream bodies", async () => {
