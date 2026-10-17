@@ -26,6 +26,16 @@ Updated from design conversation:
 - Candidate feature topics: four controlled sellers; inspect advertised versus required prices; distinguish attempts, settlements and delivery; explain five run-specific checks. No invented run results or safety certification.
 - Probe scope remains landing first fold plus primary arena only; feature-section layout is a subsequent design topic, not permission to expand implementation.
 
+## First implementation probe — awaiting user review
+- Synced core checkpoint ce08ca6 into design/gann without replacing dependency/configuration files.
+- Implemented landing first fold and compact three-step strip; asymmetric illustrated feature section deliberately deferred until probe approval.
+- Implemented /arena/probe as explicitly labelled empty design preview. /arena/[id] polls only the sanitized public GET viewer; no browser mutations or payment controls.
+- Files: web/src/app/{page.tsx,layout.tsx,globals.css,design-ui.tsx,arena/[id]/page.tsx,arena/[id]/viewer.tsx}. Next dev generated web/AGENTS.md.
+- Verification: Node 24.21.0, frozen-lockfile installation, TypeScript, 26 existing offline tests and production build passed. Playwright Chromium inspected desktop landing/arena and mobile landing; overflow checks passed at 390px for both pages. Clipboard copy interaction passed.
+- Host HTML preview/collaborative browser remains blocked by AppArmor; no privileged host change made. Used existing Playwright Chromium for actual browser inspection instead.
+- No hosted validation, paid settlement, run-result visual integration or installed-Grok journey tested. Google Fonts currently loads DM Sans and Patrick Hand remotely; local font hosting is a follow-up before final demo reliability polish.
+- User review required before expanding feature sections or propagating the design. No deployment or merge to core authorized/performed.
+
 ## Superseded initial proposal
 The following examiner-sheet brief is retained as historical context, not the approved direction.
 
