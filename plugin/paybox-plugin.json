@@ -1,6 +1,4 @@
 {
-  "tool": "echo",
-  "arguments": {
-    "message": "hello paybox"
-  }
+  "tool": "gauntlet_info",
+  "arguments": {}
 }

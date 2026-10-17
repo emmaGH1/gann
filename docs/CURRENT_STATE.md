@@ -1,6 +1,6 @@
 # Current state
 
-Updated: 2026-10-17, sprint kickoff.
+Updated: 2026-10-17 14:07 UTC, reviewed unpaid server + plugin integration checkpoint.
 
 ## Verified
 - User selected concept and renamed it **gann**; technical decisions delegated within scope.
@@ -10,16 +10,23 @@ Updated: 2026-10-17, sprint kickoff.
 - Official skill, full requirements and starter example read. All downloaded v1.0.2 starter files checked against published SHA-256 manifest.
 - Unchanged official echo starter passes typecheck, two identical builds and local conformance: one discovered tool, echo sample passed. Artifact 391450 bytes; SHA-256 fbcb47d6ad23d2bdaf5bc718823aa70c93d861d47e0e9f6e91c04ba84b23cf1c.
 - Both bounded child tasks completed. Draft examiner-sheet design not yet human approved. Payment findings and remaining verification gates recorded in docs/INTEGRATION.md; no paid-path proof.
-- Local checkpoints 5f8edb3 (verified starter/scope) and 79a2260 (integration research) on sprint/gann. Connecting remote and pushing this feature branch next.
+- Checkpoints 5f8edb3 (verified starter/scope), 79a2260 (integration research) and bc12070 (user decisions) pushed successfully to origin/sprint/gann. Working tree clean after push.
 - User has Grok and ChatGPT connected to PayBox; primary test agent is Grok (user's premium plan), comparison optional.
 - User reports Base wallet ready. No private keys required; user approves each actual $0.01 transaction.
-- User explicitly requested a separate top-level UI/design conversation for interactive inspiration and design decisions. Launch on dedicated design/gann worktree based on sprint/gann; main session owns core code.
+- User confirms free Vercel account (normally Hobby); do not purchase upgrade. Paid-seller hosting permission/alternative remains unresolved and does not block local code/test work.
+- Four course tools implemented in plugin/ plus offline metadata helper. Fixed-origin, bounded 4s fetches; strict schemas, broker-managed credentials, fixed advertised price ceilings, no payment/signature execution inside plugin.
+- `cd plugin && pnpm test:unit`: 22 offline tests passed (18 unit + 4 real-handler plugin/server in-process integration tests). `pnpm test`: typecheck, two byte-identical builds and MCP conformance passed, five discovered tools, gauntlet_info sample. Bundle 401158 bytes; SHA-256 8994be028845fd5610e8128cdea5b1ff8b2137857e071b064a97a7a7071c2a0e. Conformance sample is metadata only; no hosted course claims.
+- Server foundation completed and parent-reviewed. Session APIs, authenticated mutations, live unpaid x402 v2 inspection/challenges, CAS persistence adapter, attempt idempotency, sanitized viewer and scoring implemented. Parent reran 26 web tests, typecheck and production build: passed.
+- In-process integration proves actual plugin/server response compatibility and correct Flash proposal ceiling, with a simulated broker/HTTPS transport. It does not prove PayBox-hosted execution, real Redis or payment. Correct-code tests seed explicitly labelled fake delivery records; no production path can yet create them.
+- Fixed plugin viewer URL wiring with /arena?id compatibility entry redirect to /arena/[id]. UI remains unstyled placeholders pending design approval.
+- Paid fulfillment is hard-disabled (even if toggle true). No production delivery writer or facilitator settlement path exists yet; this is the next bounded implementation task.
+- Separate top-level design session launched: thread mcp:383f772c-4fc2-4082-a972-17cfdb43251c, dedicated design/gann worktree at /home/builder/.t3/worktrees/paybox-hack/design-gann based on bc12070. Main session owns core code; design intake/probes remain subject to user approval.
 
 ## Not yet verified
-No Gann-specific tools, hosted service, Redis account, hosted validation, settlement, deliverable or production UI yet. Echo baseline is not the finished submission. Wallet readiness is user-reported, not a tested payment. No money spent.
+No deployed service, provisioned Redis, hosted PayBox validation, facilitator settlement, delivered code or production UI yet. Local server build/tests and plugin-handler integration passed, not a real installed-plugin run. Redis tests use fake REST transport, not actual Redis Lua. Wallet readiness is user-reported, not a tested payment. No money spent.
 
 ## Next action
-Push checked feature-branch checkpoints; launch user-facing design session; implement smallest Gann integration slice. Confirm user's hosting plan before deploying paid seller: no assumed Hobby exemption for controlled hackathon payments. Human review of visual probe remains a gate.
+Implement durable authorization/order binding and confirmed-settlement delivery with fail-closed uncertainty, then independent review before enabling payments. Resolve compliant free hosting and real persistence before publication/hosted proof. User is discussing design in separate studio; human approval of visual probe remains a gate.
 
 ## Decisions waiting for human
 Approve visual probe before broad UI; approve external publication and final submission. User performs each real payment approval, max $0.01.
