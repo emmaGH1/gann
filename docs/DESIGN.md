@@ -43,6 +43,12 @@ Updated from design conversation:
 - Production build and TypeScript passed; actual Playwright desktop and 390/360px mobile overflow checks passed. Clipboard interaction and unchanged button width verified. Production browser screenshots captured without development toolbar.
 - T3 preview still blocked by host sandbox setup; independently inspected with existing Playwright Chromium. No host security settings changed. Awaiting user review before further propagation.
 
+## Navbar correction — latest user direction
+- Outlined block-letter gann is the navbar logo only, not a repeated hero element. Removed handwritten wordmark annotation in compact navbar treatment.
+- Navbar test-sheet link is a yellow torn-paper CTA; primary prompt CTA remains mint.
+- Restored original hero font sizes, margins, section padding and full-width illustration proportions. Retained refined paper ruling.
+- TypeScript and production build passed. Production browser inspected; one wordmark confirmed, no horizontal overflow at 390/360px, and test-sheet CTA navigation verified. User approval still pending.
+
 ## Superseded initial proposal
 The following examiner-sheet brief is retained as historical context, not the approved direction.
 

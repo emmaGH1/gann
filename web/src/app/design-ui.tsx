@@ -3,12 +3,17 @@ import { useState } from "react";
 export function Nav() {
   return (
     <nav className="nav">
-      <a className="logo" href="/">
-        gann
+      <a className="logo" href="/" aria-label="gann home">
+        <Wordmark />
       </a>
       <span className="nav-label">A practical test for spending agents</span>
       <div className="navlinks">
-        <a href="/arena/probe">The test sheet ↗</a>
+        <a className="button paper-cta nav-cta" href="/arena/probe">
+          <span className="paper-label">The test sheet</span>
+          <span className="paper-arrow" aria-hidden="true">
+            ↗
+          </span>
+        </a>
       </div>
     </nav>
   );
@@ -22,8 +27,7 @@ export function Wordmark() {
     ["11110", "11011", "11011", "11011", "11011", "11011"],
   ];
   return (
-    <div className="wordmark-wrap">
-      <span className="note wordmark-note">the spending test</span>
+    <span className="wordmark-wrap">
       <svg
         className="wordmark"
         viewBox="0 0 310 128"
@@ -54,7 +58,7 @@ export function Wordmark() {
           )}
         </g>
       </svg>
-    </div>
+    </span>
   );
 }
 export function CopyPrompt() {
