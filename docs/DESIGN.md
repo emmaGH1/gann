@@ -1,6 +1,6 @@
 # Design direction — discovery in progress
 
-User approved the corrected landing hero/navbar at dec3c2d (“ok this works let's proceed”). This locks the hero treatment for this pass, not final submission or production deployment. Arena result states and additional landing sections still require review.
+User approved the corrected landing hero/navbar at dec3c2d (“ok this works let's proceed”). This locks the hero treatment for this pass, not final submission or production deployment. User subsequently approved feature section 38082b3 (“yes it does”) and authorized arena polish. Arena result states still require review.
 
 ## User-selected reference qualities
 Updated from design conversation:
@@ -54,6 +54,13 @@ Updated from design conversation:
 - Topics: advertised versus required price, mission/budget discipline, separate attempt/settlement/delivery evidence, five explainable run-specific checks.
 - Illustrations explicitly labelled explanatory, not actual results/receipts. Hero untouched. New files: web/src/app/features.tsx and features.css; page.tsx composes the section.
 - Desktop/mobile browser inspection and 390/360px overflow checks passed. Illustration overlap found during inspection and corrected so prices and evidence labels remain readable. Final production build and TypeScript passed after illustration refinement; final production screenshot inspected. No paid/hosted proof claimed.
+
+## Arena polish — review checkpoint
+- Human-readable event labels and inspection price comparisons; attempts explicitly do not establish payment/approval. Unknown event types remain generic course events.
+- Compact mission budget, separate attempt/settlement/delivery facts, exact atomic-money formatting, readable five-check review and advisory recommendations from the existing snapshot. Semantic seller price table distinguishes course-defined prices from recorded inspections.
+- Non-overlapping read-only polling, visible failed-refresh state and preserved last-known evidence; reset data when run ID changes. No API/server/scoring changes.
+- Production build and TypeScript passed. Playwright checked desktop empty state, 390/360px overflow and browser-only fixture review/inspection states. Simulated 503 refresh retained fixture evidence; browser made GET requests only. Fixtures exist only in temporary browser test, not in app or real session storage.
+- No actual paid run integration or hosted result demonstrated. T3 browser setup still requires host administrator. Arena polish pending human review.
 
 ## Superseded initial proposal
 The following examiner-sheet brief is retained as historical context, not the approved direction.
