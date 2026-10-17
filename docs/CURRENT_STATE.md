@@ -1,6 +1,6 @@
 # Current state
 
-Updated: 2026-10-17 13:52 UTC, Gann-specific plugin checkpoint.
+Updated: 2026-10-17 14:07 UTC, reviewed unpaid server + plugin integration checkpoint.
 
 ## Verified
 - User selected concept and renamed it **gann**; technical decisions delegated within scope.
@@ -15,15 +15,18 @@ Updated: 2026-10-17 13:52 UTC, Gann-specific plugin checkpoint.
 - User reports Base wallet ready. No private keys required; user approves each actual $0.01 transaction.
 - User confirms free Vercel account (normally Hobby); do not purchase upgrade. Paid-seller hosting permission/alternative remains unresolved and does not block local code/test work.
 - Four course tools implemented in plugin/ plus offline metadata helper. Fixed-origin, bounded 4s fetches; strict schemas, broker-managed credentials, fixed advertised price ceilings, no payment/signature execution inside plugin.
-- `cd plugin && pnpm test:unit`: 18 offline fixture tests passed. `pnpm test`: typecheck, two byte-identical builds and MCP conformance passed, five discovered tools, gauntlet_info sample. Bundle 401158 bytes; SHA-256 8994be028845fd5610e8128cdea5b1ff8b2137857e071b064a97a7a7071c2a0e. Conformance sample is metadata only; no hosted course claims.
-- Server implementation delegated on shared checkout with exclusive web/ ownership; main thread owns plugin/ and docs/API_CONTRACT.md. Child may install/run offline tests but cannot transact, deploy, commit or alter plugin.
+- `cd plugin && pnpm test:unit`: 22 offline tests passed (18 unit + 4 real-handler plugin/server in-process integration tests). `pnpm test`: typecheck, two byte-identical builds and MCP conformance passed, five discovered tools, gauntlet_info sample. Bundle 401158 bytes; SHA-256 8994be028845fd5610e8128cdea5b1ff8b2137857e071b064a97a7a7071c2a0e. Conformance sample is metadata only; no hosted course claims.
+- Server foundation completed and parent-reviewed. Session APIs, authenticated mutations, live unpaid x402 v2 inspection/challenges, CAS persistence adapter, attempt idempotency, sanitized viewer and scoring implemented. Parent reran 26 web tests, typecheck and production build: passed.
+- In-process integration proves actual plugin/server response compatibility and correct Flash proposal ceiling, with a simulated broker/HTTPS transport. It does not prove PayBox-hosted execution, real Redis or payment. Correct-code tests seed explicitly labelled fake delivery records; no production path can yet create them.
+- Fixed plugin viewer URL wiring with /arena?id compatibility entry redirect to /arena/[id]. UI remains unstyled placeholders pending design approval.
+- Paid fulfillment is hard-disabled (even if toggle true). No production delivery writer or facilitator settlement path exists yet; this is the next bounded implementation task.
 - Separate top-level design session launched: thread mcp:383f772c-4fc2-4082-a972-17cfdb43251c, dedicated design/gann worktree at /home/builder/.t3/worktrees/paybox-hack/design-gann based on bc12070. Main session owns core code; design intake/probes remain subject to user approval.
 
 ## Not yet verified
-No deployed service, provisioned Redis, hosted PayBox validation, settlement, delivered code or production UI yet. Course tools have offline fixture coverage, not a real installed-plugin run. Server work is in progress and not yet reviewed. Wallet readiness is user-reported, not a tested payment. No money spent.
+No deployed service, provisioned Redis, hosted PayBox validation, facilitator settlement, delivered code or production UI yet. Local server build/tests and plugin-handler integration passed, not a real installed-plugin run. Redis tests use fake REST transport, not actual Redis Lua. Wallet readiness is user-reported, not a tested payment. No money spent.
 
 ## Next action
-Review and integrate server slice when delegated task completes, run plugin against local backend and prove unpaid x402 challenge. Resolve compliant free hosting before publication. User is discussing design in separate studio; human approval of visual probe remains a gate.
+Implement durable authorization/order binding and confirmed-settlement delivery with fail-closed uncertainty, then independent review before enabling payments. Resolve compliant free hosting and real persistence before publication/hosted proof. User is discussing design in separate studio; human approval of visual probe remains a gate.
 
 ## Decisions waiting for human
 Approve visual probe before broad UI; approve external publication and final submission. User performs each real payment approval, max $0.01.
