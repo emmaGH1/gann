@@ -8,7 +8,7 @@
   "vars": {
     "NODE_ENV": "production",
     "GANN_PUBLIC_ORIGIN": "https://gann-course.emma080355.workers.dev",
-    "GANN_ENABLE_PAYMENTS": "false"
+    "GANN_ENABLE_PAYMENTS": "true"
   },
   "workers_dev": true,
   "assets": {

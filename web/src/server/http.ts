@@ -3,10 +3,17 @@ import { z } from "zod";
 import { ApiError } from "./errors";
 
 export const MAX_BODY = 16 * 1024;
+export const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Gann-Key, Payment-Signature, PAYMENT-SIGNATURE",
+  "Access-Control-Expose-Headers": "Payment-Required, PAYMENT-REQUIRED, Payment-Response, PAYMENT-RESPONSE",
+};
 export const NO_STORE = {
   "Cache-Control": "private, no-store, max-age=0",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
+  ...CORS,
 };
 
 export function json(data: unknown, status = 200, headers: Record<string, string> = {}) {
