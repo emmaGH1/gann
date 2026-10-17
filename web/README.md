@@ -69,6 +69,22 @@ cd ../plugin
 pnpm test:unit
 ```
 
+## Cloudflare Workers adapter (local evaluation only)
+
+OpenNext is wired through `open-next.config.ts` and `wrangler.jsonc` for Cloudflare Workers, with `nodejs_compat` and static assets. No KV/R2/Queue cache binding is configured; OpenNext uses its dummy cache overrides. Durable session/payment state still requires separately configured Redis. The optional `rclone.js` peer is intentionally omitted because this app does not use remote R2 cache population.
+
+To run a local production-worker preview with **fake development-only values**, copy `wrangler.vars.example` to `.dev.vars` (the actual `.dev.vars` file is ignored), then:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm cloudflare:build
+pnpm cloudflare:preview
+```
+
+`cloudflare:preview` builds and starts Wrangler locally on `127.0.0.1`; it does not publish or expose a tunnel. The local-only fixtures enable in-memory development storage and keep payments disabled. Never use them as hosted credentials. There is deliberately no deployment script while hosting permission and the remaining hosted gates are unresolved.
+
+Pinned adapter/Wrangler compatibility was tested locally on 2026-10-17 with compatibility date 2026-10-13, the newest date supported by the pinned local `workerd` runtime. A Wrangler `deploy --dry-run` bundled the Worker/assets at 5,094.82 KiB total (1,044.93 KiB gzip) and exited without uploading. The Worker Free tier currently documents 100,000 requests/day and 10 ms CPU per invocation; actual hosted CPU headroom has not been measured. Local build/preview success does not establish hosted Redis persistence, free-tier capacity, PayBox compatibility, payment timeout behavior, or facilitator behavior. See [hosting research](../docs/INTEGRATION.md).
+
 ## Verification for this slice
 
 - `pnpm typecheck`: passed.

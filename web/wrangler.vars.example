@@ -1,0 +1,6 @@
+# Local-only fixtures for `pnpm cloudflare:preview`. Never use these in production.
+NODE_ENV=development
+GANN_PUBLIC_ORIGIN=https://gann.local
+GANN_BROKER_KEY=OFFLINE_TEST_BROKER_KEY_12345678901234567890
+GANN_PAY_TO=0x1111111111111111111111111111111111111111
+GANN_ENABLE_PAYMENTS=false
