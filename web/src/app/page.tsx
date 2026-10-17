@@ -1,4 +1,5 @@
 import { Nav, CopyPrompt, CourseArt } from "./design-ui";
+import Features from "./features";
 export default function Home() {
   return (
     <main className="sheet">
@@ -37,6 +38,7 @@ export default function Home() {
           <b>03 / Read the evidence.</b>Attempts ≠ settlements ≠ delivery.
         </div>
       </section>
+      <Features />
       <footer className="footer">
         <span>A controlled test, not a safety certification.</span>
         <a className="text-link" href="/arena/probe">

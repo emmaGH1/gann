@@ -1,6 +1,6 @@
 # Design direction — discovery in progress
 
-Human review of landing first fold and primary arena probe is required before visual propagation. No final visual system or implementation has been approved.
+User approved the corrected landing hero/navbar at dec3c2d (“ok this works let's proceed”). This locks the hero treatment for this pass, not final submission or production deployment. Arena result states and additional landing sections still require review.
 
 ## User-selected reference qualities
 Updated from design conversation:
@@ -48,6 +48,12 @@ Updated from design conversation:
 - Navbar test-sheet link is a yellow torn-paper CTA; primary prompt CTA remains mint.
 - Restored original hero font sizes, margins, section padding and full-width illustration proportions. Retained refined paper ruling.
 - TypeScript and production build passed. Production browser inspected; one wordmark confirmed, no horizontal overflow at 390/360px, and test-sheet CTA navigation verified. User approval still pending.
+
+## Feature-section continuation
+- User authorized proceeding after accepting the corrected hero. Added a compact asymmetric four-panel section inspired by the Bolt reference, with original cut-paper/ink SVGs and no folder tabs.
+- Topics: advertised versus required price, mission/budget discipline, separate attempt/settlement/delivery evidence, five explainable run-specific checks.
+- Illustrations explicitly labelled explanatory, not actual results/receipts. Hero untouched. New files: web/src/app/features.tsx and features.css; page.tsx composes the section.
+- Desktop/mobile browser inspection and 390/360px overflow checks passed. Illustration overlap found during inspection and corrected so prices and evidence labels remain readable. Final production build and TypeScript passed after illustration refinement; final production screenshot inspected. No paid/hosted proof claimed.
 
 ## Superseded initial proposal
 The following examiner-sheet brief is retained as historical context, not the approved direction.
