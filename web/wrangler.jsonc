@@ -4,6 +4,12 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "vars": {
+    "NODE_ENV": "production",
+    "GANN_PUBLIC_ORIGIN": "https://gann-course.emma080355.workers.dev",
+    "GANN_ENABLE_PAYMENTS": "false"
+  },
   "workers_dev": true,
   "assets": {
     "directory": ".open-next/assets",

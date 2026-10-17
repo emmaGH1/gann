@@ -71,7 +71,7 @@ pnpm test:unit
 
 ## Cloudflare Workers adapter (local evaluation only)
 
-OpenNext is wired through `open-next.config.ts` and `wrangler.jsonc` for Cloudflare Workers, with `nodejs_compat` and static assets. No KV/R2/Queue cache binding is configured; OpenNext uses its dummy cache overrides. Durable session/payment state still requires separately configured Redis. The optional `rclone.js` peer is intentionally omitted because this app does not use remote R2 cache population.
+OpenNext is wired through `open-next.config.ts` and `wrangler.jsonc` for Cloudflare Workers, with `nodejs_compat` and static assets. No KV/R2/Queue cache binding is configured; OpenNext uses its dummy cache overrides. Durable session/payment state still requires separately configured Redis. The optional `rclone.js` peer is intentionally omitted because this app does not use remote R2 cache population. Wrangler declares `NODE_ENV`, `GANN_PUBLIC_ORIGIN`, and `GANN_ENABLE_PAYMENTS=false`; `keep_vars` preserves dashboard-managed values such as `GANN_PAY_TO`. Secrets are never stored in Wrangler config.
 
 To run a local production-worker preview with **fake development-only values**, copy `wrangler.vars.example` to `.dev.vars` (the actual `.dev.vars` file is ignored), then:
 
