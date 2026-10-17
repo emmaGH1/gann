@@ -36,6 +36,13 @@ Updated from design conversation:
 - No hosted validation, paid settlement, run-result visual integration or installed-Grok journey tested. Google Fonts currently loads DM Sans and Patrick Hand remotely; local font hosting is a follow-up before final demo reliability polish.
 - User review required before expanding feature sections or propagating the design. No deployment or merge to core authorized/performed.
 
+## Hero refinement — user-requested second pass
+- Removed Claude-like asterisk. Added original lowercase block-letter SVG wordmark with thin irregular coral outline and handwritten annotation, adapting the ROBIN reference rather than copying its letters.
+- CTA is now agent-neutral: “Copy test prompt”, mint torn-paper label with adjacent arrow fragment; stable-width copied state and accessible status announcement. Prompt text remains agent-neutral and requires an installed PayBox plugin.
+- Reduced headline/art scale to accommodate identity; softened and tightened paper ruling. No new sections or backend changes.
+- Production build and TypeScript passed; actual Playwright desktop and 390/360px mobile overflow checks passed. Clipboard interaction and unchanged button width verified. Production browser screenshots captured without development toolbar.
+- T3 preview still blocked by host sandbox setup; independently inspected with existing Playwright Chromium. No host security settings changed. Awaiting user review before further propagation.
+
 ## Superseded initial proposal
 The following examiner-sheet brief is retained as historical context, not the approved direction.
 

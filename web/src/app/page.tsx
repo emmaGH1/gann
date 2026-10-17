@@ -1,11 +1,11 @@
-import { Nav, CopyPrompt, CourseArt } from "./design-ui";
+import { Nav, CopyPrompt, CourseArt, Wordmark } from "./design-ui";
 export default function Home() {
   return (
     <main className="sheet">
       <Nav />
       <section className="hero">
         <div>
-          <div className="eyebrow">Small budget. Real judgment.</div>
+          <Wordmark />
           <h1>
             Give your agent
             <br />a budget.

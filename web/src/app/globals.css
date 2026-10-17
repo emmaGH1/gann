@@ -35,7 +35,7 @@ button {
   max-width: 1392px;
   margin: 24px auto;
   background:
-    repeating-linear-gradient(transparent 0 31px, #343e3010 31px 32px),
+    repeating-linear-gradient(transparent 0 27px, #343e300b 27px 28px),
     var(--paper);
   min-height: calc(100vh - 48px);
   padding: 0 5% 32px;
@@ -75,7 +75,7 @@ button {
   grid-template-columns: 1.1fr 1fr;
   align-items: center;
   gap: 20px;
-  padding: 76px 0 44px;
+  padding: 38px 0 42px;
 }
 .eyebrow {
   font-size: 11px;
@@ -88,10 +88,10 @@ button {
   font-size: 22px;
 }
 .hero h1 {
-  font-size: clamp(48px, 5.6vw, 82px);
-  line-height: 0.99;
-  letter-spacing: -4px;
-  margin: 24px 0;
+  font-size: clamp(43px, 4.2vw, 62px);
+  line-height: 1.04;
+  letter-spacing: -2.6px;
+  margin: 25px 0 20px;
 }
 .highlight {
   position: relative;
@@ -139,6 +139,89 @@ button {
 }
 .hero-art {
   position: relative;
+  width: 94%;
+  justify-self: center;
+}
+.wordmark-wrap {
+  width: 272px;
+  position: relative;
+  padding-top: 24px;
+}
+.wordmark {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.wordmark-note {
+  position: absolute;
+  top: -1px;
+  left: 76px;
+  font-size: 19px;
+  transform: rotate(-4deg);
+}
+.paper-cta {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  gap: 5px;
+  color: var(--ink);
+  min-width: 258px;
+  text-align: center;
+}
+.paper-label,
+.paper-arrow {
+  background: var(--mint);
+  padding: 16px 20px;
+  clip-path: polygon(
+    2% 0,
+    98% 2%,
+    100% 9%,
+    98% 18%,
+    100% 28%,
+    98% 39%,
+    100% 50%,
+    98% 61%,
+    100% 72%,
+    98% 83%,
+    100% 94%,
+    98% 100%,
+    1% 98%,
+    3% 88%,
+    0 77%,
+    2% 65%,
+    0 54%,
+    2% 43%,
+    0 32%,
+    2% 21%,
+    0 10%
+  );
+}
+.paper-label {
+  min-width: 210px;
+}
+.paper-arrow {
+  min-width: 48px;
+  padding-left: 13px;
+  padding-right: 13px;
+}
+.paper-cta:hover .paper-label,
+.paper-cta:hover .paper-arrow {
+  background: #a5d4bd;
+}
+.paper-cta:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 5px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .art-label {
   text-align: center;
@@ -334,8 +417,8 @@ h2 {
     gap: 0;
   }
   .hero h1 {
-    font-size: 58px;
-    letter-spacing: -3px;
+    font-size: 45px;
+    letter-spacing: -2px;
   }
   .hero-art {
     max-width: 390px;
