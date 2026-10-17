@@ -1,6 +1,6 @@
 # gann web — durable, default-disabled payment slice
 
-Real Next.js App Router / TypeScript application implementing the frozen [API contract](../docs/API_CONTRACT.md). UI pages remain untouched placeholders pending the separate design review. **No hosted validation, hosted Redis, real facilitator call, cryptographic payment verification, settlement, or payment has been performed.** The Redis Lua was smoke-tested against a temporary local Redis 7 process with fixtures only.
+Real Next.js App Router / TypeScript application implementing the frozen [API contract](../docs/API_CONTRACT.md). UI pages remain untouched placeholders pending the separate design review. One public Cloudflare Workers Free deployment is authorized for unpaid validation; its home page responds, but the API currently returns `503 configuration_required` until production variables/secrets and hosted Redis are configured. **No successful hosted validation, hosted Redis, real facilitator call, cryptographic payment verification, settlement, or payment has been performed.** The Redis Lua was smoke-tested against a temporary local Redis 7 process with fixtures only.
 
 ## Implemented routes and boundaries
 
@@ -81,7 +81,7 @@ pnpm cloudflare:build
 pnpm cloudflare:preview
 ```
 
-`cloudflare:preview` builds and starts Wrangler locally on `127.0.0.1`; it does not publish or expose a tunnel. The local-only fixtures enable in-memory development storage and keep payments disabled. Never use them as hosted credentials. There is deliberately no deployment script while hosting permission and the remaining hosted gates are unresolved.
+`cloudflare:preview` builds and starts Wrangler locally on `127.0.0.1`; it does not publish or expose a tunnel. The local-only fixtures enable in-memory development storage and keep payments disabled. Never use them as hosted credentials. A single public deployment was made with the user's explicit authorization; there is deliberately no automatic deployment script. Future deployments still require authorization.
 
 Pinned adapter/Wrangler compatibility was tested locally on 2026-10-17 with compatibility date 2026-10-13, the newest date supported by the pinned local `workerd` runtime. A Wrangler `deploy --dry-run` bundled the Worker/assets at 5,094.82 KiB total (1,044.93 KiB gzip) and exited without uploading. The Worker Free tier currently documents 100,000 requests/day and 10 ms CPU per invocation; actual hosted CPU headroom has not been measured. Local build/preview success does not establish hosted Redis persistence, free-tier capacity, PayBox compatibility, payment timeout behavior, or facilitator behavior. See [hosting research](../docs/INTEGRATION.md).
 
@@ -92,7 +92,7 @@ Pinned adapter/Wrangler compatibility was tested locally on 2026-10-17 with comp
 - `NEXT_TELEMETRY_DISABLED=1 pnpm build`: passed (routes dynamic where required).
 - `cd plugin && pnpm test:unit`: **22 offline tests passed**, including **4 actual plugin/application-handler integration tests** using simulated broker/HTTPS transport. These do not exercise paid PayBox fetches or live payments.
 
-Paid tests inject a clearly labelled fake facilitator; they do **not** perform cryptographic signature verification, on-chain settlement, or prove external facilitator behavior. Redis tests validate command shape with fake REST transports; a separate one-off smoke executed session/payment Lua against local Redis 7, but does **not** prove Upstash/hosted cluster behavior, durability or failover. Earlier correct-code fixtures are explicitly test-only durable ledger records. No live payments, deployments, or accounts were used.
+Paid tests inject a clearly labelled fake facilitator; they do **not** perform cryptographic signature verification, on-chain settlement, or prove external facilitator behavior. Redis tests validate command shape with fake REST transports; a separate one-off smoke executed session/payment Lua against local Redis 7, but does **not** prove Upstash/hosted cluster behavior, durability or failover. Earlier correct-code fixtures are explicitly test-only durable ledger records. No live payments occurred. The authorized Cloudflare deployment is currently unconfigured; no Cloudflare or Upstash account was created by this project.
 
 ## Remaining gates — no integration success inferred
 
