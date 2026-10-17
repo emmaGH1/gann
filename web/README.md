@@ -83,6 +83,14 @@ pnpm cloudflare:preview
 
 `cloudflare:preview` builds and starts Wrangler locally on `127.0.0.1`; it does not publish or expose a tunnel. The local-only fixtures enable in-memory development storage and keep payments disabled. Never use them as hosted credentials. A single public deployment was made with the user's explicit authorization; there is deliberately no automatic deployment script. Future deployments still require authorization.
 
+For importing the three Worker secrets with Wrangler, copy `cloudflare-secrets.example.env` to `cloudflare-secrets.env`, replace every placeholder locally with raw values (no quotes), and run from this directory:
+
+```sh
+./node_modules/.bin/wrangler secret bulk ./cloudflare-secrets.env
+```
+
+The filled file is ignored by Git. Do not commit, upload, screenshot, or send it. Cloudflare Dashboard itself does not import `.env` files; use its Variables and Secrets form if you do not have a trusted terminal. This bulk command configures only `GANN_BROKER_KEY`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`; non-secret variables remain configured separately.
+
 Pinned adapter/Wrangler compatibility was tested locally on 2026-10-17 with compatibility date 2026-10-13, the newest date supported by the pinned local `workerd` runtime. A Wrangler `deploy --dry-run` bundled the Worker/assets at 5,094.82 KiB total (1,044.93 KiB gzip) and exited without uploading. The Worker Free tier currently documents 100,000 requests/day and 10 ms CPU per invocation; actual hosted CPU headroom has not been measured. Local build/preview success does not establish hosted Redis persistence, free-tier capacity, PayBox compatibility, payment timeout behavior, or facilitator behavior. See [hosting research](../docs/INTEGRATION.md).
 
 ## Verification for this slice
